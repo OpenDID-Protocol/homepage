@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<script>
+		"use strict"; const maxInt = 2147483647, base = 36, tMin = 1, tMax = 26, skew = 38, damp = 700, initialBias = 72, initialN = 128, delimiter = "-", regexPunycode = /^xn--/, regexNonASCII = /[^\0-\x7F]/, regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g, errors = { overflow: "Overflow: input needs wider integers to process", "not-basic": "Illegal input >= 0x80 (not a basic code point)", "invalid-input": "Invalid input" }, baseMinusTMin = 35, floor = Math.floor, stringFromCharCode = String.fromCharCode; function error(o) { throw new RangeError(errors[o]) } function map(o, e) { const r = []; let t = o.length; for (; t--;)r[t] = e(o[t]); return r } function mapDomain(o, e) { const r = o.split("@"); let t = ""; r.length > 1 && (t = r[0] + "@", o = r[1]); return t + map((o = o.replace(regexSeparators, ".")).split("."), e).join(".") } function ucs2decode(o) { const e = []; let r = 0; const t = o.length; for (; r < t;) { const n = o.charCodeAt(r++); if (n >= 55296 && n <= 56319 && r < t) { const t = o.charCodeAt(r++); 56320 == (64512 & t) ? e.push(((1023 & n) << 10) + (1023 & t) + 65536) : (e.push(n), r--) } else e.push(n) } return e } const ucs2encode = o => String.fromCodePoint(...o), basicToDigit = function (o) { return o >= 48 && o < 58 ? o - 48 + 26 : o >= 65 && o < 91 ? o - 65 : o >= 97 && o < 123 ? o - 97 : 36 }, digitToBasic = function (o, e) { return o + 22 + 75 * (o < 26) - ((0 != e) << 5) }, adapt = function (o, e, r) { let t = 0; for (o = r ? floor(o / 700) : o >> 1, o += floor(o / e); o > 455; t += 36)o = floor(o / 35); return floor(t + 36 * o / (o + 38)) }, decode = function (o) { const e = [], r = o.length; let t = 0, n = 128, i = 72, c = o.lastIndexOf("-"); c < 0 && (c = 0); for (let r = 0; r < c; ++r)o.charCodeAt(r) >= 128 && error("not-basic"), e.push(o.charCodeAt(r)); for (let a = c > 0 ? c + 1 : 0; a < r;) { const c = t; for (let e = 1, n = 36; ; n += 36) { a >= r && error("invalid-input"); const c = (s = o.charCodeAt(a++)) >= 48 && s < 58 ? s - 48 + 26 : s >= 65 && s < 91 ? s - 65 : s >= 97 && s < 123 ? s - 97 : 36; c >= 36 && error("invalid-input"), c > floor((maxInt - t) / e) && error("overflow"), t += c * e; const d = n <= i ? 1 : n >= i + 26 ? 26 : n - i; if (c < d) break; const l = 36 - d; e > floor(maxInt / l) && error("overflow"), e *= l } const d = e.length + 1; i = adapt(t - c, d, 0 == c), floor(t / d) > maxInt - n && error("overflow"), n += floor(t / d), t %= d, e.splice(t++, 0, n) } var s; return String.fromCodePoint(...e) }, encode = function (o) { const e = [], r = (o = ucs2decode(o)).length; let t = 128, n = 0, i = 72; for (const r of o) r < 128 && e.push(stringFromCharCode(r)); const c = e.length; let s = c; for (c && e.push("-"); s < r;) { let r = maxInt; for (const e of o) e >= t && e < r && (r = e); const a = s + 1; r - t > floor((maxInt - n) / a) && error("overflow"), n += (r - t) * a, t = r; for (const r of o) if (r < t && ++n > maxInt && error("overflow"), r === t) { let o = n; for (let r = 36; ; r += 36) { const t = r <= i ? 1 : r >= i + 26 ? 26 : r - i; if (o < t) break; const n = o - t, c = 36 - t; e.push(stringFromCharCode(digitToBasic(t + n % c, 0))), o = floor(n / c) } e.push(stringFromCharCode(digitToBasic(o, 0))), i = adapt(n, a, s === c), n = 0, ++s } ++n, ++t } return e.join("") }, toUnicode = function (o) { return mapDomain(o, (function (o) { return regexPunycode.test(o) ? decode(o.slice(4).toLowerCase()) : o })) }, toASCII = function (o) { return mapDomain(o, (function (o) { return regexNonASCII.test(o) ? "xn--" + encode(o) : o })) }, punycode = { version: "2.1.0", ucs2: { decode: ucs2decode, encode: ucs2encode }, decode: decode, encode: encode, toASCII: toASCII, toUnicode: toUnicode };
+	</script>
+
+	<style>
+		/* css loading */
+		.lds-ellipsis {
+			display: inline-block;
+			position: relative;
+			width: 80px;
+			height: 80px;
+		}
+
+		.lds-ellipsis div {
+			position: absolute;
+			top: 33px;
+			width: 13px;
+			height: 13px;
+			border-radius: 50%;
+			background: #666;
+			animation-timing-function: cubic-bezier(0, 1, 1, 0);
+		}
+
+		.lds-ellipsis div:nth-child(1) {
+			left: 8px;
+			animation: lds-ellipsis1 0.6s infinite;
+		}
+
+		.lds-ellipsis div:nth-child(2) {
+			left: 8px;
+			animation: lds-ellipsis2 0.6s infinite;
+		}
+
+		.lds-ellipsis div:nth-child(3) {
+			left: 32px;
+			animation: lds-ellipsis2 0.6s infinite;
+		}
+
+		.lds-ellipsis div:nth-child(4) {
+			left: 56px;
+			animation: lds-ellipsis3 0.6s infinite;
+		}
+
+		@keyframes lds-ellipsis1 {
+			0% {
+				transform: scale(0);
+			}
+
+			100% {
+				transform: scale(1);
+			}
+		}
+
+		@keyframes lds-ellipsis3 {
+			0% {
+				transform: scale(1);
+			}
+
+			100% {
+				transform: scale(0);
+			}
+		}
+
+		@keyframes lds-ellipsis2 {
+			0% {
+				transform: translate(0, 0);
+			}
+
+			100% {
+				transform: translate(24px, 0);
+			}
+		}
+
+		/* page */
+		body {
+			background-color: #eee;
+		}
+
+		#vm,
+		#loadingFailed {
+			display: none;
+		}
+
+		#loading {
+			text-align: center;
+			margin: 15px;
+		}
+
+		.bg-white {
+			background-color: #fff !important;
+		}
+
+		.shadow {
+			box-shadow: 0 1px 3px rgba(3, 0, 71, .09) !important;
+		}
+
+		.avatar {
+			display: block;
+			width: 80px;
+			height: 80px;
+			margin-top: 40px;
+			background-color: #fff;
+			background-size: cover;
+		}
+
+		a {
+			text-decoration: none !important;
+		}
+
+		a.x-crypto {
+			width: 100%;
+			margin-bottom: 10px;
+			padding-left: 15px;
+			padding-right: 15px;
+			text-align: left;
+			position: relative;
+		}
+
+		a.x-crypto>img.bi {
+			width: 25px;
+			height: 25px;
+			display: block;
+			float: left;
+		}
+
+		a.x-crypto>span {
+			display: block;
+			margin-left: 40px;
+			margin-right: 30px;
+		}
+
+		a.x-crypto>i.bi-arrow-right {
+			display: block;
+			float: right;
+		}
+
+		a.x-social {
+			width: 100%;
+			margin-bottom: 10px;
+			padding-left: 15px;
+			padding-right: 15px;
+			text-align: left;
+			position: relative;
+		}
+
+		a.x-social>i.x-social-logo {
+			width: 25px;
+			height: 25px;
+			display: block;
+			float: left;
+		}
+
+		a.x-social>i.bi-arrow-right {
+			display: block;
+			float: right;
+		}
+
+		a.x-social>span {
+			display: block;
+			margin-left: 30px;
+			margin-right: 30px;
+		}
+
+		a.x-social>i.bi:first-child {
+			display: inline-block;
+			width: 25px;
+		}
+
+		a.x-social>i.bi:last-child {
+			display: block;
+			float: right;
+		}
+	</style>
+
+	<script>
+		window.IS_FIREFOX = navigator.userAgent.toLowerCase().indexOf('firefox') >= 0;
+		window.IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+		window.IS_TESTNET = location.hostname.endsWith('opendid-testnet.me') || location.hostname === 'localhost';
+		window.DOMAIN = window.IS_TESTNET ? 'opendid-testnet.me' : 'opendid.me';
+		window.QUERY_URL = 'https://api.thegraph.com/subgraphs/name/opendid-protocol/' + (window.IS_TESTNET ? 'testnet' : 'mainnet');
+
+		function domSetText(id, s) {
+			document.getElementById(id).innerText = s;
+		}
+
+		function domShow(id) {
+			document.getElementById(id).style.display = 'block';
+		}
+
+		function domHide(id) {
+			document.getElementById(id).style.display = 'none';
+		}
+
+		function init() {
+			let
+				pos = location.hostname.indexOf('.'),
+				name = punycode.toUnicode(location.hostname.substring(0, pos)),
+				query = {
+					'query': `
+{
+    names(where: { name: "${name}"}) {
+        id
+        owner
+        name
+        records {
+            label
+            content
+        }
+    }
+}`
+				};
+			fetch(window.QUERY_URL, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(query)
+			}).then((resp) => resp.json())
+				.then(init2);
+		}
+
+		function init2(result) {
+			console.log(result);
+			if (result.data.names.length === 0) {
+				domSetText('errorMessage', 'Name not found.');
+				domHide('loading');
+				domShow('error');
+			} else {
+				init3(result.data.names[0]);
+			}
+		}
+
+		function init3(did) {
+			for (let r of did.records) {
+				if (r.label === 'redirect') {
+					let url = r.content;
+					if (url.startsWith('http://') || url.startsWith('https://')) {
+						console.log(`redirect to: ${url}`);
+						location.assign(url);
+						return;
+					}
+				}
+			}
+			// load styles & scripts:
+			console.log('load styles & scripts...');
+			let
+				styles = [
+					'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css',
+					'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css'
+				],
+				scripts = [
+					'https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js',
+					'https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js',
+					'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js',
+					'https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js',
+					'https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js',
+					'https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.min.js',
+					'https://cdn.jsdelivr.net/npm/ethers@5.0.32/dist/ethers.umd.min.js'
+				],
+				scriptsLoaded = 0,
+				head = document.getElementsByTagName('head')[0];
+			if (!window.IS_MOBILE) {
+				scripts.push('https://cdn.jsdelivr.net/npm/@google/model-viewer@2.1.1/dist/model-viewer.min.js');
+			}
+			for (let url of styles) {
+				let link = document.createElement('link');
+				link.rel = 'stylesheet';
+				link.type = 'text/css';
+				link.href = url;
+				head.appendChild(link);
+			}
+
+			for (let url of scripts) {
+				let script = document.createElement('script');
+				script.type = url.indexOf('model-viewer') > 0 ? 'module' : 'text/javascript';
+				script.src = url;
+				script.onload = function () {
+					scriptsLoaded++;
+					if (scriptsLoaded === scripts.length) {
+						init4(did);
+					}
+				}
+				script.onerror = function () {
+					domSetText('errorMessage', 'Load script failed.');
+					domHide('loading');
+					domShow('error');
+				}
+				head.appendChild(script);
+			}
+		}
+
+		function makeQRCodeStyling(size, strData, coinType) {
+			let
+				bgColor = '#fff',
+				fgColor = '#000';
+			return new QRCodeStyling({
+				data: strData,
+				width: size,
+				height: size,
+				type: 'svg',
+				// FIXME: qr-code-styling has issue in firefox when display logo: 
+				image: window.IS_FIREFOX ? null : 'https://assets.opendid-ns.me/assets/images/crypto/' + coinType + '.svg',
+				qrOptions: {
+					mode: 'Byte',
+					errorCorrectionLevel: 'Q'
+				},
+				imageOptions: {
+					margin: 5
+				},
+				dotsOptions: {
+					type: 'rounded',
+					color: fgColor,
+					gradient: null
+				},
+				dotsOptionsHelper: {
+					colorType: {
+						single: true,
+						gradient: false
+					}
+				},
+				cornersSquareOptions: {
+					type: 'dot',
+					color: fgColor
+				},
+				cornersSquareOptionsHelper: {
+					colorType: {
+						single: true,
+						gradient: false
+					}
+				},
+				cornersDotOptions: {
+					type: 'dot',
+					color: fgColor
+				},
+				cornersDotOptionsHelper: {
+					colorType: {
+						single: true,
+						gradient: false
+					}
+				},
+				backgroundOptions: {
+					color: bgColor
+				},
+				backgroundOptionsHelper: {
+					colorType: {
+						single: true,
+						gradient: false
+					}
+				}
+			});
+		}
+
+		function copyText(s, callback) {
+			console.log('try copy: ' + s);
+			if (navigator.clipboard) {
+				navigator.clipboard.writeText(s);
+				callback && callback();
+			} else {
+				console.warn('navigator.clipboard not supported.');
+				let
+					textarea = document.createElement('textarea'),
+					modal = $('#popupModal').get(0);
+				modal.appendChild(textarea);
+				textarea.style.position = 'fixed';
+				textarea.style.clip = 'rect(0 0 0 0)';
+				textarea.style.top = '10px';
+				textarea.value = s;
+				textarea.select();
+				document.execCommand('copy', true);
+				modal.removeChild(textarea);
+				callback && callback();
+			}
+		}
+
+		function copyAddress(a) {
+			let
+				$a = $(a),
+				$p = $a.parent().parent(),
+				$clickToCopy = $p.find('span.x-click-to-copy'),
+				$copied = $p.find('span.x-copied');
+			if (window.copiedTimeout) {
+				clearTimeout(window.copiedTimeout);
+				window.copiedTimeout = null;
+			}
+			copyText($a.text(), () => {
+				$clickToCopy.hide();
+				$copied.show();
+				window.copiedTimeout = setTimeout(() => {
+					$copied.hide();
+					$clickToCopy.show();
+				}, 3000);
+			});
+		}
+
+		function init4(did) {
+			console.log('load all ok.', did);
+
+			String.prototype.toChecksum = function () {
+				return ethers.utils.getAddress(this.valueOf());
+			};
+
+			String.prototype.abbr = function () {
+				let s = this.valueOf();
+				if (s.startsWith('0x') && s.length > 12) {
+					return s.substring(0, 6) + '...' + s.substring(s.length - 4);
+				}
+				if (s.length > 8) {
+					return s.substring(0, 4) + '...' + s.substring(s.length - 4);
+				}
+				return s;
+			};
+
+			window.POPUP_MODAL = new bootstrap.Modal(document.getElementById('popupModal'));
+
+			window.vm = new Vue({
+				el: '#vm',
+				data: {
+					domain: window.DOMAIN,
+					coins: ['eth', 'btc', 'doge', 'ltc', 'ada', 'dash', 'dot', 'sol', 'fil', 'xlm', 'trx', 'xmr', 'zec', 'nostr'],
+					socials: ['github', 'twitter', 'reddit', 'discord', 'facebook', 'telegram', 'youtube', 'instagram', 'linkedin', 'pinterest'],
+					social_links: {
+						github: 'https://github.com/{value}',
+						twitter: 'https://twitter.com/{value}',
+						reddit: 'https://reddit.com/user/{value}',
+						discord: 'https://discord.gg/{value}',
+						youtube: 'https://www.youtube.com/{value}',
+						instagram: 'https://www.instagram.com/{value}/',
+						linkedin: 'https://www.linkedin.com/in/{value}/',
+						pinterest: 'https://www.pinterest.com/{value}/',
+						facebook: 'https://www.facebook.com/{value}',
+						telegram: 'https://t.me/{value}'
+					},
+					name: did.name,
+					address: did.owner,
+					records: did.records.reduce((r, record) => { r[record.label] = record.content; return r; }, {
+						'eth': did.owner
+					})
+				},
+				computed: {
+					hasSocialLinks: function () {
+						for (let i = 0; i < this.socials.length; i++) {
+							if (this.records[this.socials[i]]) {
+								return true;
+							}
+						}
+						return false;
+					},
+					show3d: function () {
+						return !window.IS_MOBILE && this.avatar3dUrl;
+					},
+					avatar3dUrl: function () {
+						if (this.records.avatar3d) {
+							return this.records.avatar3d;
+						}
+						return null;
+					},
+					avatarUrl: function () {
+						if (this.records.avatar) {
+							return this.records.avatar;
+						}
+						let email = (this.records.email || '').trim().toLowerCase();
+						if (email) {
+							return 'https://www.gravatar.com/avatar/' + md5(email);
+						}
+						return 'https://stamp.fyi/avatar/' + encodeURIComponent(this.name);
+					}
+				},
+				methods: {
+					displayCoin: function (coin) {
+						let
+							address = this.records[coin],
+							qrcode = makeQRCodeStyling(400, address, coin),
+							$title = $('#popupModal h5.modal-title'),
+							$address = $('#popupModal a.x-address'),
+							$qrcode = $('#popupModal div.x-qrcode');
+						$title.text('My ' + coin.toUpperCase() + ' address');
+						$address.text(address);
+						$qrcode.html('');
+						qrcode.append($qrcode.get(0));
+						if (window.copiedTimeout) {
+							clearTimeout(window.copiedTimeout);
+							window.copiedTimeout = null;
+						}
+						$('#popupModal span.x-click-to-copy').show();
+						$('#popupModal span.x-copied').hide();
+						window.POPUP_MODAL.show();
+					}
+				},
+				mounted: function () {
+					$('#loading').hide();
+					$('#vm').show();
+				}
+			});
+		}
+
+		document.addEventListener("DOMContentLoaded", init);
+	</script>
+</head>
+
+<body>
+	<div id="loading">
+		<div class="lds-ellipsis">
+			<div></div>
+			<div></div>
+			<div></div>
+			<div></div>
+		</div>
+	</div>
+
+	<div id="error" style="display:none">
+		<div><span id="errorMessage"></span></div>
+	</div>
+
+	<div id="popupModal" class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+		style="display:none">
+		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title"></h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="d-flex flex-row justify-content-center">
+						<div class="x-qrcode m-2"></div>
+					</div>
+					<div class="text-center">
+						<div>
+							<a class="x-address m-2 mt-4 text-truncate" style="display:block" href="#0"
+								onclick="copyAddress(this)"></a>
+						</div>
+						<div>
+							<span class="x-click-to-copy">Click to copy</span>
+							<span class="x-copied"><i class="bi bi-check-circle"></i> Copied</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="vm" style="display:none">
+		<div class="container" style="max-width: 640px !important;">
+			<div class="row">
+				<div class="col-12">
+					<!-- banner -->
+					<div class="row mt-3 align-items-center">
+						<div class="col-12">
+							<!-- Bg -->
+							<div class="rounded-top d-flex justify-content-center"
+								style="height:100px; background-repeat:no-repeat; background-size: cover;"
+								v-bind:style="{'background-image':'url(https://assets.opendid-ns.me/assets/images/bg.svg)'}">
+								<div v-if="!show3d" v-bind:style="{ backgroundImage: 'url('+avatarUrl+')' }"
+									class="avatar rounded-circle border border-4 border-white"
+									style="width:120px; height:120px"></div>
+								<div v-if="show3d" class="avatar rounded-circle border border-4 border-white"
+									style="width:120px; height:120px">
+									<model-viewer v-bind:src="avatar3dUrl"
+										style="display:block; width:112px; height:112px;" environment-image="neutral"
+										max-camera-orbit="60deg 150deg auto" min-camera-orbit="-60deg 10deg auto"
+										id="reveal" loading="eager" shadow-intensity="0" exposure="0.75" disable-zoom
+										camera-controls="" interaction-prompt="none"
+										ar-status="not-presenting"></model-viewer>
+								</div>
+							</div>
+							<div class="pb-3 rounded-bottom bg-white shadow text-center" style="padding-top:60px">
+								<h4 v-text="name"></h4>
+								<span v-text="address.toChecksum().abbr()" class="text-muted"></span>
+							</div>
+						</div>
+					</div>
+
+					<!-- crypto -->
+					<div class="row mt-3">
+						<div class="col-12">
+							<div class="p-3 pt-4 rounded bg-white shadow">
+								<a v-for="coin in coins" v-if="records[coin]" v-on:click="displayCoin(coin)" href="#0"
+									class="btn btn-outline-primary x-crypto">
+									<img class="bi"
+										v-bind:src="'https://assets.opendid-ns.me/assets/images/crypto/'+coin+'.svg'">
+									<i class="bi bi-arrow-right"></i>
+									<span v-text="records[coin]" class="text-truncate"></span>
+								</a>
+							</div>
+						</div>
+					</div>
+
+					<!-- link -->
+					<div v-show="hasSocialLinks" class="row mt-3">
+						<div class="col-12">
+							<div class="p-3 pt-4 rounded bg-white shadow">
+								<a v-for="social in socials" v-if="records[social]"
+									v-bind:href="social_links[social].replace('{value}', records[social])"
+									class="btn btn-outline-primary x-social">
+									<i v-bind:class="'x-social-logo bi bi-'+social"></i>
+									<i class="bi bi-arrow-right"></i>
+									<span v-text="social_links[social].replace('{value}', records[social]).substring(8)"
+										class="text-truncate"></span>
+								</a>
+							</div>
+						</div>
+					</div>
+
+					<!-- footer -->
+					<div class="row mt-3 mb-2">
+						<div class="col-12 text-center">
+							Get your OpenDID name at <a v-bind:href="'https://'+domain" v-text="domain"></a>
+						</div>
+						<div class="col-12" style="font-size: 0.8rem">
+							<hr>
+							The profile content on this page is automatically generated from publicly available
+							information provided through <a v-bind:href="'https://'+domain">OpenDID</a> and is
+							ultimately controlled by the relevant <a v-bind:href="'https://'+domain">OpenDID</a>
+							user. Nothing on this page implies any endorsement or affiliation between <a
+								v-bind:href="'https://'+domain">OpenDID</a> and the person or organization whose
+							profile information appears on this page. This site does not use any third-party trackers.
+						</div>
+					</div>
+					<!--// footer -->
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>
